@@ -1,0 +1,335 @@
+% \iffalse meta-comment
+%
+% Copyright (C) 2013 by Marcel Pietschmann
+% -----------------------------------
+%
+% This file may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in:
+%
+% http://www.latex-project.org/lppl.txt
+%
+% and version 1.3c or later is part of all distributions of LaTeX
+% version 2008/05/04 or later.
+%
+% Took from Thomas Fisher's weblog
+% english: http://la-tex.dreamwidth.org/3017.html
+% german: http://tfischernet.wordpress.com/2007/04/11/mehrzeilige-tabellen-in-latex-schoner-machen/
+% \fi
+%
+% \iffalse
+%
+%<*readme>
+multirowbt
+==========
+
+This package defines a multirow command for use with booktabs package.
+
+
+
+* ``\multirowbt``: 
+* ``\multirow*``:
+
+## Package options
+* ``loop``
+* ``star``
+
+## Install
+
+* Clone this repository to your homedir
+   e.g. ``git clone https://github.com/maphy-psd/multiworbt.git``
+* LaTeX run on multirow.ins, e.g.
+
+        pdflatex multirow.ins
+
+## Compile the documention
+* LaTeX run on multirow.dtx
+
+        pdflatex multirow.dtx
+
+* Changesection needs a makeindex run
+
+        makeindex -s gglo.ist -o multirow.gls hmultirow.glo
+
+* also the Index
+
+        makeindex -s gind.ist -o multirow.ind multirow.idx
+
+* a another LaTeX run makes the complete documention
+
+        pdflatex multirow.dtx
+
+**Enjoy!**
+%</readme>
+%
+%<package>
+%<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+%<package>\ProvidesPackage{multirowbt}
+%<package> [2013/11/21 v0.9 This package defines a multirow command for use with booktabs package.]
+%<package>
+%
+% 
+%<*driver>
+\documentclass{ltxdoc}
+\usepackage{multirowbt}
+\EnableCrossrefs
+\CodelineIndex
+\RecordChanges
+%\OnlyDescription
+\begin{document}
+\DocInput{multirowbt.dtx}
+\PrintChanges
+% \PrintIndex
+\end{document}
+%</driver>
+% \fi
+%
+% \CheckSum{0}
+%
+% \changes{v0.1a}{2013/11/18}{first alpha version}
+% \changes{v0.2}{2013/11/19}{recoded without loop}
+% \changes{v0.3}{2013/11/22}{option loop to define with a forloop-construction}
+% \changes{v0.8}{2013/11/25}{Initial version}
+%
+% \GetFileInfo{multirowbt.sty}
+%
+% \DoNotIndex{\newif,\RequirePackage}
+%
+% \title{The \textsf{multirowbt} package\thanks{This document
+% corresponds to \textsf{multirowbt}~\fileversion,
+% dated \filedate.}}
+% \author{Marcel Pietschmann \\ \texttt{psd.phi@gmail.com}}
+%
+% \maketitle
+%
+% \begin{abstract}
+% Tables in LaTeX are a mighty tool to represent and display information. Visual limitations of the standard table's layout can be improved using some small tricks as explained below.
+% \end{abstract}
+%
+% \tableofcontents
+%
+% \section{Introduction}
+%
+% The |booktab| package provides some usefull and nicefully commands for tables. For example it increases the vertical distances between vertical lines and the text in cell bodies. The |\multirow| command ignorance of the additional vertical spacing introduced by |booktabs|. Thomas Fisher has published the solution for this problem on his blog (english\footnote{|http://la-tex.dreamwidth.org/3017.html|} or german\footnote{|http://tfischernet.wordpress.com/2007/04/11/mehrzeilige-tabellen-in-latex-schoner-machen/|})
+%
+% \section{Usage}
+% You can \DescribeMacro{\multirowbt}use |\multirowbt| like the |\multirow|. The star variant\DescribeMacro{\multirowbt*} |\multirowbt*| supports the optional parameters from |\multirow|.
+% 
+%
+% |\multirowbt| \marg{nrows}\marg{width}\marg{text}
+%
+% 
+% |\multirowbt*| \marg{nrows}\oarg{bigstruts}\marg{width}\oarg{fixup}\marg{text}
+%
+% \StopEventually{}
+%
+% \clearpage
+% \section{Implementation}
+% We start with the required packages.
+% \iffalse
+%<*package>
+% \fi
+%    \begin{macrocode}
+\RequirePackage{multirow}
+\RequirePackage{booktabs}
+\RequirePackage{xparse}
+%    \end{macrocode}
+% We declare the |loop| option to define the |\multirowbt| command by a |\forloop|-construction. Therefor we set a boolean variable named |mbt@loop@|. When the packageoption |loop| is set, the boolean variable |mbt@loop@| is set to true.
+%    \begin{macrocode}
+\newif\ifmbt@loop@
+\DeclareOption{loop}{\mbt@loop@true}
+%    \end{macrocode}
+% It is possible to \textit{redefine} the |\multirow| command and not to define the new |\multirowbt| command. The option |star| do that.
+%    \begin{macrocode}
+\newif\ifmbt@star@
+\DeclareOption{star}{\mbt@star@true}
+%    \end{macrocode}
+% Unkown options produce a warning.
+%    \begin{macrocode}
+\DeclareOption*{\PackageWarning{multirowbt}{Unknown option `\CurrentOption'}}
+%    \end{macrocode}
+% Activate the options.
+%    \begin{macrocode}
+\ProcessOptions\relax
+%    \end{macrocode}
+% The |ifthen| packages is needed for the |\forloop|-construction.
+%    \begin{macrocode}
+\ifmbt@loop@
+\RequirePackage{ifthen}
+\fi
+%    \end{macrocode}
+% The default behauvior is, that multirowbt define the |\multirowbt|-command.
+%
+%
+% This command computes and creates a vertical space
+% depending on the number of rows to compensate for.
+% It makes use of the counter verticalcompensationrows
+% and the length |\verticalcompensationlength| which equals
+% |\aboverulesep| plus |\belowrulesep|
+%    \begin{macrocode}
+\ifmbt@loop@
+\newcommand{\forloop}[5][1]{%
+\setcounter{#2}{#3}%
+\ifthenelse{#4}{#5\addtocounter{#2}{#1}%
+\forloop[#1]{#2}{\value{#2}}{#4}{#5}}%
+{}}
+\newcounter{mbt@rows@counter}
+\newcommand{\mbt@verticalcompensation}[1]{%
+\forloop{mbt@rows@counter}{1}{\value{mbt@rows@counter} < #1}%
+{\vspace*{-\aboverulesep}\vspace*{-\belowrulesep}}}
+\else
+\newlength{\mbt@verticalcompensation@length}
+\setlength{\mbt@verticalcompensation@length}{\aboverulesep}
+\addtolength{\mbt@verticalcompensation@length}{\belowrulesep}
+\newcounter{mbt@verticalcompensation@rows}
+\newcommand{\mbt@verticalcompensation}[1]{%
+\setcounter{mbt@verticalcompensation@rows}{#1}%
+\addtocounter{mbt@verticalcompensation@rows}{-1}%
+\vspace*{-\value{mbt@verticalcompensation@rows}\mbt@verticalcompensation@length}%
+}
+\fi
+%    \end{macrocode}
+% \begin{macro}{\multirow*}
+%\changes{v0.1b}{2013/11/20}{add optional parameter}
+%\changes{v0.3b}{2013/11/20}{star version of the multirow command}
+% To reimplements the |\multirow| command, we use the |\DeclareDocumentCommand| from the \LaTeX3 Package |xparse|. This is necessery to compensate for the vertical offset.
+
+%    \begin{macrocode}
+\ifmbt@star@
+%    \end{macrocode}
+%    \begin{macrocode}
+\let\multirowsav\multirow
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareDocumentCommand{\multirow}{s m O{0} m O{0pt} m}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+ \IfBooleanTF{#1}
+%    \end{macrocode}
+%    \begin{macrocode}
+  {%
+   \multirowsav{#2}[#3]{#4}[#5]{\mbt@verticalcompensation{#2}#6}%
+  }{%
+%    \end{macrocode}
+%    \begin{macrocode}
+   \multirowsav{#2}[#3]{#4}[#5]{#6}%
+  }
+}
+\let\multirowbt\multirow
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\multirowbt}
+% When the |star| option is not use, we define the |\multirowbt| with three required paramter |m| and two optinal parameter |O| with the default value |{0}| or |{0pt}|.
+%    \begin{macrocode}
+\else
+\DeclareDocumentCommand{\multirowbt}{m O{0} m O{0pt} m}{%
+%    \end{macrocode}
+% Then redefine the |\multirow|-command with the optional parameters
+%    \begin{macrocode}
+   \multirow{#1}[#2]{#3}[#4]{\mbt@verticalcompensation{#1}#5}%
+}
+\fi
+%    \end{macrocode}
+% \end{macro}
+%
+% \iffalse
+%</package>
+% \fi
+%
+% \Finale
+%
+%\iffalse
+%<*example>
+\documentclass{article}
+
+\usepackage{multirowbt}
+
+\begin{document}
+
+\section*{multirowbt.sty demo}
+
+This is a nice little demo of how the multirowbt package changes the behavoiur of the booktabs package when multi-rows are used.
+
+\bigskip
+
+This is a table with the regular multirow command:\\
+
+\begin{centering}
+
+\begin{tabular}{cccc}
+\toprule
+Gruppe & Adh\"asivsystem            & Schallaktivierung & Lining               \\
+\midrule
+1      & \multirow{4}{*}{Syntac} & nein                & \multirow{2}{*}{nein} \\
+\cmidrule{1-1}\cmidrule{3-3}
+2      &                           & ja                &                       \\
+\cmidrule{1-1}\cmidrule{3-4}
+3      &                           & nein              & \multirow{2}{*}{ja}   \\
+\cmidrule{1-1}\cmidrule{3-3}
+4      &                           & ja                &                       \\
+\midrule
+5      & \multirow{4}{*}{AdheSE} & nein                & \multirow{2}{*}{nein} \\
+\cmidrule{1-1}\cmidrule{3-3}
+6      &                           & ja                &                       \\
+\cmidrule{1-1}\cmidrule{3-4}
+7      &                           & nein              & \multirow{2}{*}{ja}   \\
+\cmidrule{1-1}\cmidrule{3-3}
+8      &                           & ja                &                       \\
+\bottomrule
+\end{tabular}
+
+\end{centering}
+
+\bigskip
+
+This is the same table with the multirowbt command:\\
+
+\begin{centering}
+
+\begin{tabular}{cccc}
+\toprule
+Gruppe & Adh\"asivsystem            & Schallaktivierung & Lining                 \\
+\midrule
+1      & \multirowbt*{4}{*}{Syntac} & nein              & \multirowbt{2}{*}{nein} \\
+\cmidrule{1-1}\cmidrule{3-3}
+2      &                           & ja                &                         \\
+\cmidrule{1-1}\cmidrule{3-4}
+3      &                           & nein              & \multirowbt{2}{*}{ja}   \\
+\cmidrule{1-1}\cmidrule{3-3}
+4      &                           & ja                &                         \\
+\midrule
+5      & \multirowbt{4}{*}{AdheSE} & nein              & \multirowbt{2}{*}{nein} \\
+\cmidrule{1-1}\cmidrule{3-3}
+6      &                           & ja                &                         \\
+\cmidrule{1-1}\cmidrule{3-4}
+7      &                           & nein              & \multirowbt{2}{*}{ja}   \\
+\cmidrule{1-1}\cmidrule{3-3}
+8      &                           & ja                &                         \\
+\bottomrule
+\end{tabular}
+
+\end{centering}
+
+\end{document}
+%</example>
+% \fi
+%
+\endinput
+%
+% \CharacterTable
+% {Upper-case \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+% Lower-case \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+% Digits \0\1\2\3\4\5\6\7\8\9
+% Exclamation \! Double quote \" Hash (number) \#
+% Dollar \$ Percent \% Ampersand \&
+% Acute accent \´ Left paren \( Right paren \)
+% Asterisk \* Plus \+ Comma \,
+% Minus \- Point \. Solidus \/
+% Colon \: Semicolon \; Less than \<
+% Equals \= Greater than \> Question mark \?
+% Commercial at \@ Left bracket \[ Backslash \\
+% Right bracket \] Circumflex \^ Underscore \_
+% Grave accent \` Left brace \{ Vertical bar \|
+% Right brace \} Tilde \~}
+%
